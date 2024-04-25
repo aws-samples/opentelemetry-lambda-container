@@ -9,9 +9,11 @@ This repository showcases how to send traces to AWS X-Ray using the OpenTelemetr
 The OpenTelemetry Collector is responsible for collecting and exporting trace data from the Lambda function to AWS X-Ray. In this section, we'll build the custom Collector image with the necessary configuration and components.
 
 ```
-$ git clone https://github.com/open-telemetry/opentelemetry-lambda.git -b layer-collector/0.4.0
-$ cp -r opentelemetry-lambda/collector/ otel-collector-lambda-extension
-$ rm -rf opentelemetry-lambda/
+git clone https://github.com/aws-samples/opentelemetry-lambda-container.git
+cd opentelemetry-lambda-container
+git clone https://github.com/open-telemetry/opentelemetry-lambda.git -b layer-collector/0.4.0
+cp -r opentelemetry-lambda/collector/ otel-collector-lambda-extension
+rm -rf opentelemetry-lambda/
 ```
 
 ### Edit Files
@@ -67,13 +69,13 @@ After building the OpenTelemetry Collector image, we need to push it to an Amazo
 The steps in this section demonstrate how to create an ECR repository, log in to the registry, and push the Collector image to the repository.
 
 ```
-$ export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-$ cd otel-collector-lambda-extension
-$ aws ecr create-repository --repository-name lambda-extension/otel-collector
-$ aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
-$ docker build -t lambda-extension/otel-collector .
-$ docker tag lambda-extension/otel-collector:latest ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
-$ docker push ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+cd otel-collector-lambda-extension
+aws ecr create-repository --repository-name lambda-extension/otel-collector
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+docker build -t lambda-extension/otel-collector .
+docker tag lambda-extension/otel-collector:latest ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
+docker push ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
 ```
 
 ## Deploy Lambda with CDK
@@ -88,22 +90,29 @@ Replace `<Your AWS account id>` in `lambda-function/Dockerfile`.
 Run the following commands.
 
 ```
-$ cd lambda-trace
-$ npm install
-$ cdk deploy
+cd lambda-trace
+npm install
+cdk deploy
 ```
 
 ### Check the Lambda Function Works
+Run the following command to put an image to a S3 bucket.
+
 ```
-$ aws s3api put-object --bucket <RekognitionSourceBucketName> --key image.png --body <Some image file>
+aws s3api put-object --bucket <RekognitionSourceBucketName> --key image.png --body <Some image file>
 ```
+
+Then visit the AWS X-Ray console and you find trace data.
+
+![](./img/xray-console.png)
 
 ## Clean Up
 After testing the solution, you can use the provided commands to clean up the resources, including the deployed Lambda function and the ECR repository for the OpenTelemetry Collector image.
 
 ```
-$ cdk destroy
-$ aws ecr delete-repository --repository-name lambda-extension/otel-collector
+cdk destroy
+aws ecr batch-delete-image --repository-name lambda-extension/otel-collector --image-ids imageTag=v1
+aws ecr delete-repository --repository-name lambda-extension/otel-collector
 ```
 
 ## Security
