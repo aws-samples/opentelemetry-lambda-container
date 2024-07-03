@@ -1,10 +1,19 @@
-# Send Traces to AWS X-Ray Using OpenTelemetry SDK from Containerized Lambda
+# Sending Traces to AWS X-Ray Using OpenTelemetry SDK from Containerized Lambda
 
 This repository showcases how to send traces to AWS X-Ray using the OpenTelemetry SDK from a containerized AWS Lambda function. The project demonstrates the integration of OpenTelemetry Collector as a Lambda extension, which collects and exports trace data to AWS X-Ray.
 
 ![](./img/send-traces-from-containerized-lambda.png)
 
-## Build OpenTelemetry Collector
+## Building OpenTelemetry Collector
+
+### Requirements
+
+- AWS CLI already configured
+- AWS CDK installed
+- NodeJS installed
+- Docker installed
+
+### Cloning the repository
 
 The OpenTelemetry Collector is responsible for collecting and exporting trace data from the Lambda function to AWS X-Ray. In this section, we'll build the custom Collector image with the necessary configuration and components.
 
@@ -16,17 +25,14 @@ cp -r opentelemetry-lambda/collector/ otel-collector-lambda-extension
 rm -rf opentelemetry-lambda/
 ```
 
-### Edit Files
+### Editing Files
 In this step, we'll modify the OpenTelemetry Collector configuration to include the AWS X-Ray exporter. This allows the Collector to send trace data to the AWS X-Ray service.
 
-1. Edit the `otel-collector-lambda-extension/lambdacomponents/go.mod` file to add the `awsxrayexporter` dependency.
+1. Add the `awsxrayexporter` dependency to `otel-collector-lambda-extension/lambdacomponents/go.mod`.
 
 ```
-require (
-    github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.92.0
-    // add awsxrayexporter
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.92.0
-)
+cd otel-collector-lambda-extension/lambdacomponents/
+go mod edit --require=github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter@v0.92.0 
 ```
 2. Edit the `otel-collector-lambda-extension/lambdacomponents/default.go` file to import the `awsxrayexporter` and add it to the list of exporters.
 
@@ -63,30 +69,31 @@ FROM scratch
 COPY --from=collector-builder /src/collector src/collector
 ```
 
-### Push Collector to ECR
+### Pushing the collector to an ECR repository
 After building the OpenTelemetry Collector image, we need to push it to an Amazon Elastic Container Registry (ECR) repository. This allows the Lambda function to use the Collector as a Lambda extension.
 
 The steps in this section demonstrate how to create an ECR repository, log in to the registry, and push the Collector image to the repository.
 
 ```
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export AWS_DEFAULT_REGION=us-east-1
 cd otel-collector-lambda-extension
 aws ecr create-repository --repository-name lambda-extension/otel-collector
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
 docker build -t lambda-extension/otel-collector .
-docker tag lambda-extension/otel-collector:latest ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
-docker push ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/lambda-extension/otel-collector:v1
+docker tag lambda-extension/otel-collector:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/lambda-extension/otel-collector:v1
+docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/lambda-extension/otel-collector:v1
 ```
 
-## Deploy Lambda with CDK
+## Deploying AWS resources with CDK
 In this section, we'll use the AWS CDK (Cloud Development Kit) to deploy the Lambda function that will be instrumented with the OpenTelemetry SDK and use the OpenTelemetry Collector as a Lambda extension.
 
 The Lambda function is triggered by an image being uploaded to an S3 bucket. The `RekognitionSourceBucketName` output provides the name of the S3 bucket that you can use to test the Lambda function and observe the trace data in AWS X-Ray.
 
-### Edit Dockerfile of the Lambda function
-Replace `<Your AWS account id>` in `lambda-function/Dockerfile`.
+### Editing Dockerfile of the Lambda function
+Replace `<Your AWS account id>` and `<Your AWS region>` in `lambda-function/Dockerfile`.
 
-### Deploy
+### Deploying the resources
 Run the following commands.
 
 ```
@@ -95,7 +102,7 @@ npm install
 cdk deploy
 ```
 
-### Check the Lambda Function Works
+### Checking the Lambda Function Works
 Run the following command to put an image to a S3 bucket.
 
 ```
@@ -106,7 +113,7 @@ Then visit the AWS X-Ray console and you find trace data.
 
 ![](./img/xray-console.png)
 
-## Clean Up
+## Cleaning Up
 After testing the solution, you can use the provided commands to clean up the resources, including the deployed Lambda function and the ECR repository for the OpenTelemetry Collector image.
 
 ```
