@@ -11,7 +11,7 @@ use opentelemetry::{KeyValue,Context};
 use opentelemetry::trace::{Span, Tracer,FutureExt, TraceContextExt};
 use serde_json::{json, Value};
 use simple_error::SimpleError;
-use tracing::info;
+use tracing::{debug,info};
 
 #[allow(unused_imports)]
 use mockall::automock;
@@ -112,14 +112,14 @@ fn construct_rekognition_image(arg: &DetectLabelArguments) -> rekognition::types
 
 async fn handler(event: LambdaEvent<S3Event>) -> Result<Value, Error> {
     let parent_context = get_span_context_from_environment_var()?;
-    info!("Event is {:?}", &event);
-    info!("Parent Context is {:?}", &parent_context);
+    debug!("Event is {:?}", &event);
+    debug!("Parent Context is {:?}", &parent_context);
     let config = aws_config::load_from_env().await;
     let rekognition_client = rekognition::Client::new(&config);
     let client = RekognitionImpl::new(rekognition_client);
     let (event, _context) = event.into_parts();
-    info!("S3Event is {:?}", &event);
-    info!("Context is {:?}", &_context);
+    debug!("S3Event is {:?}", &event);
+    debug!("Context is {:?}", &_context);
     let argument = retrieve_arguments_from_event(event)
         .map_err(|e| Box::new(SimpleError::new(format!("Invalid event: {e}"))))?;
 

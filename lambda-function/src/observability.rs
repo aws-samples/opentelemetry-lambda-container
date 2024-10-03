@@ -6,7 +6,7 @@ use opentelemetry_sdk::{
     Resource,
 };
 
-use tracing_subscriber::prelude::*;
+use tracing_subscriber::{prelude::*};
 use tracing_subscriber::{fmt, fmt::format, EnvFilter};
 use opentelemetry_otlp::WithExportConfig;
 
@@ -27,9 +27,10 @@ pub fn init_observability() -> Result<(), Error> {
     let filter_layer = EnvFilter::from_default_env();
     let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
+    // order of layers maybe important
     tracing_subscriber::registry()
-        .with(filter_layer)
         .with(fmt_layer)
+        .with(filter_layer)
         .with(telemetry_layer)
         .init();
     Ok(())

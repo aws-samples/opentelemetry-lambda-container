@@ -17,7 +17,7 @@ http = "0.2.6"
 simple-error = "0.2.3"
 tokio = { version = "1.17.0", features = ["full"] }
 tracing = { version = "0.1.40", features = ["log","attributes"] }
-tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter","json"] }
+tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter","json","registry"] }
 aws-config = { version = "1.1.6", features = ["behavior-version-latest"] }
 aws-sdk-rekognition = "1.15.0"
 mockall = "0.12.0"

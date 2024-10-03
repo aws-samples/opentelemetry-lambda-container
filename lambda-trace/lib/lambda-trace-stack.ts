@@ -40,7 +40,7 @@ export class LambdaTraceStack extends Stack {
       code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, '../../lambda-function')),
       architecture: lambda.Architecture.X86_64,
       environment: {
-        "RUST_LOG": "info"
+        "RUST_LOG": "bootstrap=debug,error"
       },
       logRetention: logs.RetentionDays.FIVE_DAYS,
       role: role,
