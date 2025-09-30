@@ -1,0 +1,9 @@
+# CDK
+.cdk.staging
+cdk.out/
+cdk.context.json
+
+# Python
+__pycache__/
+*.py[codz]
+*$py.class

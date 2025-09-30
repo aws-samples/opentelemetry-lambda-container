@@ -7,7 +7,7 @@
         "eventTime": "2019-09-03T19:37:27.192Z",
         "eventName": "ObjectCreated:Put",
         "userIdentity": {
-          "principalId": "AWS:AIDAINPONIXQXHT3IKHL2"
+          "principalId": "AWS:DUMMYVALUE"
         },
         "requestParameters": {
           "sourceIPAddress": "205.255.255.255"
